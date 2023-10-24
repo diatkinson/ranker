@@ -7,8 +7,7 @@ import numpy as np
 
 K = 15 
 
-st.set_page_config(page_title="Names", page_icon="🥔", layout="centered", initial_sidebar_state="auto", menu_items=None)
-
+st.set_page_config(page_title="Names", page_icon="🥔", layout="wide", initial_sidebar_state="auto", menu_items=None)
 
 def names_left_to_rank(conn: Connection) -> list[tuple[str, str]]:
    return conn.cursor().execute('''
@@ -37,7 +36,6 @@ def choose_names_to_rank_top(conn: Connection) -> tuple[str, str]:
     
     pair_scores = np.array([1 / (abs(top_chances[n1]) + abs(top_chances[n2])) for n1, n2 in name_pairs_left])
     pair_scores = np.exp(pair_scores) / sum(np.exp(pair_scores))
-    print(list(zip(name_pairs_left, pair_scores)))
     idx = np.random.choice(np.array(range(len(name_pairs_left))), p=pair_scores)
     return name_pairs_left[idx]
 
