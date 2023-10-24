@@ -67,19 +67,33 @@ def generate_estimates(names: list[str], evaluations: set[tuple[str, str]]) -> d
         observed_data[winner_idx, loser_idx] = 1
 
     mask = observed_data.astype(bool)
-    
+
+    name_to_idx = {name: idx for idx, name in enumerate(names)}
+    evaluation_indices = [(name_to_idx[winner], name_to_idx[loser]) for winner, loser in evaluations]
+    evaluation_indices_tensor = np.array(evaluation_indices)
+
+    def compute_delta(indices, name_vars):
+        winner_idx, loser_idx = indices
+        delta = name_vars[winner_idx] - name_vars[loser_idx]
+        return delta
+
     with pm.Model() as model:
         # Define latent variables for the true values of the items
         name_vars = pm.Normal('names', mu=0, sigma=1, shape=len(names))
 
         deltas = 0.5 * pt.tensor.ones_like(mask)
 
-        # Compute deltas based on evaluations
-        for winner, loser in evaluations:
-            winner_idx = names.index(winner)
-            loser_idx = names.index(loser)
-            delta = name_vars[winner_idx] - name_vars[loser_idx]
-            deltas = set_subtensor(deltas[winner_idx, loser_idx], delta)
+        sequences = evaluation_indices_tensor
+        outputs_info = None
+        non_sequences = [name_vars]
+
+        deltas_list, _ = pt.scan(fn=compute_delta,
+                                sequences=sequences,
+                                outputs_info=outputs_info,
+                                non_sequences=non_sequences)
+
+        deltas = set_subtensor(deltas[mask], deltas_list)
+
         p = pm.math.sigmoid(deltas)
         # Adjust the likelihood computation to only consider the compared pairs
         pm.Bernoulli('obs', p=p[mask], observed=observed_data[mask])
