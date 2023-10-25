@@ -29,13 +29,19 @@ def choose_names_to_rank_random(conn: Connection) -> tuple[str, str]:
 
 def choose_names_to_rank_top(conn: Connection) -> tuple[str, str]:
     """
-    rank pairs by abs(name1_top_k_chance - .5) + abs(name1_top_k_chance - .5)
+    rank pairs by abs(name1_top_k_chance - .5) + abs(name1_top_k_chance - .5), sample the ones closest to 50%
     """
+    epsilon = 1e-4
+    temperature = 15
     name_pairs_left = names_left_to_rank(conn)
     top_chances = {name: top_chance for name, _, _, top_chance in get_estimates(conn)}
     
-    pair_scores = np.array([1 / (abs(top_chances[n1]) + abs(top_chances[n2])) for n1, n2 in name_pairs_left])
-    pair_scores = np.exp(pair_scores) / sum(np.exp(pair_scores))
+    def score_pair(name1: str, name2: str) -> float:
+        return -max(epsilon, abs(top_chances[name1] - 50) + abs(top_chances[name2] - 50))
+
+    raw_pair_scores = np.array([score_pair(name1, name2) for name1, name2 in name_pairs_left]) / temperature
+    pair_scores = np.exp(raw_pair_scores) / sum(np.exp(raw_pair_scores))
+
     idx = np.random.choice(np.array(range(len(name_pairs_left))), p=pair_scores)
     return name_pairs_left[idx]
 
