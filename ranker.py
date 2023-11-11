@@ -95,10 +95,9 @@ def generate_estimates(names: list[str], evaluations: set[tuple[str, str]]) -> d
         deltas = set_subtensor(deltas[mask], deltas_list)
 
         p = pm.math.sigmoid(deltas)
-        # Adjust the likelihood computation to only consider the compared pairs
+        # Fix the likelihood computation to only consider the compared pairs
         pm.Bernoulli('obs', p=p[mask], observed=observed_data[mask])
 
-        # Perform MCMC
         trace = pm.sample(2000)
 
     samples = np.vstack(trace.posterior.names)

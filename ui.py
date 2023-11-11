@@ -4,8 +4,10 @@ from sqlite3 import Connection
 import random
 import itertools as it
 import numpy as np
+from popular_names import show_rank
 
 K = 15 
+DROP_FREQUENCY = 15
 
 st.set_page_config(page_title="Names", page_icon="🥔", layout="wide", initial_sidebar_state="auto", menu_items=None)
 
@@ -50,6 +52,10 @@ def insert_evaluation(conn: Connection, winner: str, loser: str):
     conn.execute('insert into evaluations (winner, loser) values (?, ?)', (winner, loser))
 
 
+def drop_evaluation(conn: Connection):
+    conn.execute('delete from evaluations where rowid in (select rowid from evaluations order by random() limit 1);')
+
+
 def evaluation_progress(conn: Connection) -> tuple[int, int]:
     evaluated = conn.cursor().execute('select count(*) from evaluations').fetchone()[0]
     names = conn.cursor().execute('select name from names').fetchall()
@@ -72,7 +78,13 @@ if __name__ == "__main__":
         name1, name2 = choose_names_to_rank_top(conn)
 
         color = random.choice("red orange green blue violet".split())
-        st.markdown(f"## Do you prefer\n## :{color}[{name1} O'Bryan] or :{color}[{name2} O'Bryan]?")
+        st.markdown(f"## Do you prefer\n## :{color}[{name1}] or :{color}[{name2}]?")
+        st.markdown(show_rank(name1))
+        st.markdown(show_rank(name2))
+
+        evaluated_count, total_count = evaluation_progress(conn)
+        if random.random() < (1 / DROP_FREQUENCY):
+            drop_evaluation(conn)
 
         left_col, right_col = st.columns(2)
         with left_col: 
@@ -80,7 +92,6 @@ if __name__ == "__main__":
         with right_col:
             st.button(name2, key="right_button", on_click=lambda: insert_evaluation(conn, name2, name1))
 
-        evaluated_count, total_count = evaluation_progress(conn) 
         st.text(f'Evaluated {evaluated_count}/{total_count} name pairs')
 
     estimates = sorted(get_estimates(conn), key=lambda x: x[1], reverse=True)
