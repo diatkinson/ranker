@@ -72,7 +72,7 @@ if __name__ == "__main__":
         name1, name2 = choose_names_to_rank_top(conn)
 
         color = random.choice("red orange green blue violet".split())
-        st.markdown(f"## Do you prefer :{color}[{name1}] or :{color}[{name2}]?")
+        st.markdown(f"## Do you prefer\n## :{color}[{name1} O'Bryan] or :{color}[{name2} O'Bryan]?")
 
         left_col, right_col = st.columns(2)
         with left_col: 
@@ -88,4 +88,5 @@ if __name__ == "__main__":
         st.header('Current Ranking')
         for idx, (name, value, std, top_k_chance) in enumerate(estimates, start=1):
             estimate_str = f'{value}±{std};'
-            st.text(f'{idx:<2}. {name:<10} ({estimate_str:<11} {round(top_k_chance):>2}% chance of being top {K})')
+            rank = str(idx) + '.'
+            st.text(f'{rank:<3} {name:<10} ({estimate_str:<11} {round(top_k_chance):>2}% chance of being top {K})')
