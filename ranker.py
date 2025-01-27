@@ -22,8 +22,8 @@ def init_db() -> Connection:
     cur.execute("create table if not exists names (name text primary key)")
     if not cur.execute("select name from names").fetchone():
         with open("names.txt") as f:
-            names = f.read()
-        name_tuples = [(name,) for name in set(names.split("\n"))]
+            names = set(f.read().split("\n"))
+        name_tuples = [(name.strip(),) for name in names]
         cur.executemany("insert into names (name) values (?)", name_tuples)
 
     cur.execute("""
